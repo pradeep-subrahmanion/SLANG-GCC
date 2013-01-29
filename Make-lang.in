@@ -1,0 +1,166 @@
+# This file provides the language dependent support in the main Makefile.
+# Each language makefile fragment must provide the following targets:
+#
+# foo.all.cross, foo.start.encap, foo.rest.encap,
+# foo.install-common, foo.install-man, foo.install-info, foo.install-pdf,
+# foo.info, foo.dvi, foo.pdf, foo.html, foo.uninstall,
+# foo.mostlyclean, foo.clean, foo.distclean,
+# foo.maintainer-clean, foo.stage1, foo.stage2, foo.stage3, foo.stage4
+#
+# where `foo' is the name of the language.
+
+### This Makefile is ugly ....... Will fix it later.
+
+CPPFLAGS =  -L /usr/lib/  -lstdc++
+CXXFLAGS =  -L /usr/lib/  -lstdc++
+
+#  * I need to fix this .......... * 
+
+GCCINCLUDES = -I/home/pradeep/hack/trunk/build/prev-x86_64-unknown-linux-gnu/libstdc++-v3/include/x86_64-unknown-linux-gnu -I/home/pradeep/hack/trunk/build/prev-x86_64-unknown-linux-gnu/libstdc++-v3/include -I/home/pradeep/hack/trunk/gcc-4.7.2/libstdc++-v3/libsupc++ -L/home/pradeep/hack/trunk/build/prev-x86_64-unknown-linux-gnu/libstdc++-v3/src/.libs -L/home/pradeep/hack/trunk/build/prev-x86_64-unknown-linux-gnu/libstdc++-v3/libsupc++/.libs -c   -g -O2 -DIN_GCC   -fno-exceptions -fno-rtti -W -Wall -Wno-narrowing -Wwrite-strings -Wcast-qual    -DHAVE_CONFIG_H -I. -Islang -I/home/pradeep/hack/trunk/build/../gcc-4.7.2/gcc -I/home/pradeep/hack/trunk/build/../gcc-4.7.2/gcc/slang -I/home/pradeep/hack/trunk/build/../gcc-4.7.2/gcc/../include -I/home/pradeep/hack/trunk/build/../gcc-4.7.2/gcc/../libcpp/include -I/home/pradeep/hack/trunk/build/./gmp -I/home/pradeep/hack/trunk/gcc-4.7.2/gmp -I/home/pradeep/hack/trunk/build/./mpfr -I/home/pradeep/hack/trunk/gcc-4.7.2/mpfr -I/home/pradeep/hack/trunk/gcc-4.7.2/mpc/src  -I/home/pradeep/hack/trunk/build/../gcc-4.7.2/gcc/../libdecnumber -I/home/pradeep/hack/trunk/build/../gcc-4.7.2/gcc/../libdecnumber/bid -I../libdecnumber
+
+
+SFE_EXES = gsfe slang1
+
+.phony: slang
+
+SLANG_SRC = $(srcdir)/slang
+
+SLANG_OBJS = \
+         slang-gcc.o \
+	     ast.o \
+	     ast_statement.o \
+	     lexer.o \
+	     parser.o \
+	     common.o \
+	     context.o \
+	     compilation_unit.o \
+	     builder.o
+	  
+
+slang: slang1$(exeext) gsfe$(exeext) 
+
+# core compiler slang
+slang1$(exeext): $(SLANG_OBJS) slang/genericizer.o  slang/slang.o $(BACKEND) $(LIBSDEPS)
+	echo "DEBUG_ANDI: sfe - $(BACKEND) .. $(LIBSDEPS) .. $(LIBS) .. attribs.o .. $(GMPLIBS) .. $(BACKENDLIBS)"
+	$(LINKER) $(ALL_LINKERFLAGS) $(LDFLAGS) -o $@ slang/slang-gcc.o slang/ast.o slang/ast_statement.o slang/lexer.o slang/parser.o \
+	slang/common.o slang/context.o slang/compilation_unit.o \
+	slang/builder.o slang/genericizer.o slang/slang.o \
+	$(BACKEND) $(GMPLIBS) $(LIBS) $(BACKENDLIBS) $(CPPFLAGS) $(CXXFLAGS)
+
+########################################### Create SLANG frontend object files #############################
+
+
+slang-gcc.o: slang/slang-gcc.cc
+	$(CXX) -c $(SLANG_SRC)/slang-gcc.cc -o slang/slang-gcc.o
+
+ast.o: slang/frontend/ast.cc
+	$(CXX) -c $(SLANG_SRC)/frontend/ast.cc -o slang/ast.o
+
+ast_statement.o: slang/frontend/ast_statement.cc
+	$(CXX) -c $(SLANG_SRC)/frontend/ast_statement.cc -o slang/ast_statement.o
+
+lexer.o: slang/frontend/lexer.cc
+	$(CXX) -c $(SLANG_SRC)/frontend/lexer.cc -o slang/lexer.o
+
+parser.o: slang/frontend/parser.cc
+	$(CXX) -c $(SLANG_SRC)/frontend/parser.cc -o slang/parser.o
+
+common.o: slang/frontend/common.cc
+	$(CXX) -c $(SLANG_SRC)/frontend/common.cc -o slang/common.o 
+
+context.o: slang/frontend/context.cc
+	$(CXX) -c $(SLANG_SRC)/frontend/context.cc -o slang/context.o
+
+compilation_unit.o: slang/frontend/compilation_unit.cc
+	$(CXX) -c $(SLANG_SRC)/frontend/compilation_unit.cc -o slang/compilation_unit.o
+
+builder.o: slang/frontend/builder.cc
+	$(CXX) -c $(SLANG_SRC)/frontend/builder.cc -o slang/builder.o
+
+
+###########################################################################################
+
+
+slang/slang.o: slang/slang.c $(CONFIG_H) $(SYSTEM_H) coretypes.h $(TM_H) \
+  $(FLAGS_H) toplev.h $(GGC_H) $(TREE_H) $(DIAGNOSTIC_H)  \
+  input.h options.h opts.h \
+  gtype-slang.h 
+
+slang/genericizer.o: slang/genericizer.cc 
+	$(CXX) -c $(SLANG_SRC)/genericizer.cc -o slang/genericizer.o $(GCCINCLUDES)
+
+# compiler driver gsfe 
+gsfe$(exeext): $(GCC_OBJS) version.o prefix.o intl.o $(EXTRA_GCC_OBJS) \
+  $(LIBDEPS) slang/gsfe.o
+	echo "DEBUG_ANDI: gsfe - $(EXTRA_GCC_OBJS) .. $(LIBS) .. $(GCC_OBJS) .. $(ALL_CFLAGS) .. $(LDFLAGS)" 
+	$(CC) $(ALL_CFLAGS) $(LDFLAGS) -o $@ slang/gsfe.o \
+	  $(GCC_OBJS) version.o prefix.o intl.o  $(EXTRA_GCC_OBJS) libcommon-target.a \
+	  $(EXTRA_GCC_LIBS) $(LIBS)
+
+slang/gsfe.o: slang/gsfe.c $(CONFIG_H) $(SYSTEM_H) \
+  coretypes.h $(DIAGNOSTIC_H) $(TREE_H) $(FLAGS_H) toplev.h langhooks.h $(TM_H)
+
+slang.srcextra: 
+
+slang.all.cross:
+
+slang.start.encap:
+slang.rest.encap:
+slang.man:
+slang.srcman:
+slang.install-plugin:
+slang.tags: force
+	cd $(srcdir)/slang; etags -o TAGS.sub *.y *.l *.c *.h *.cc frontend/*.h frontend/*.cc; \
+	etags --include TAGS.sub --include ../TAGS.sub
+
+slang.info: 
+slang.srcinfo: 
+slang.dvi: 
+slang.pdf: 
+doc/slang.info: 
+doc/slang.dvi: 
+doc/slang.pdf: 
+slang.html: 
+
+.phony:slang.install.common
+.phony:slang.install
+
+slang.install slang.install.common slang.install-common: slang.install.common.done
+
+slang.install.common.done:  installdirs 
+	for name in $(SFE_EXES); \
+	do \
+	   if [ -f $$name ] ; then \
+	    name2="`echo \`basename $$name\` | sed -e '$(program_transform_name)' `"; \
+	    rm -f $(DESTDIR)$(bindir)/$$name2$(exeext); \
+	    echo $(INSTALL_PROGRAM) $$name$(exeext) $(DESTDIR)$(bindir)/$$name2$(exeext); \
+	    $(INSTALL_PROGRAM) $$name$(exeext) $(DESTDIR)$(bindir)/$$name2$(exeext); \
+	    chmod a+x $(DESTDIR)$(bindir)/$$name2$(exeext); \
+        cp $$name /usr/bin/; \
+	  fi ; \
+	done
+
+	cp slang1 /usr/bin
+	cp gsfe /usr/bin
+
+slang.install-info: 
+slang.install-pdf: 
+slang.install-man:
+
+# Stage hooks:
+# The main makefile has already created stage?/slang.
+
+slang.stage1: stage1-start
+	-mv slang/*$(objext) stage1/slang
+slang.stage2: stage2-start
+	-mv slang/*$(objext) stage2/slang
+slang.stage3: stage3-start
+	-mv slang/*$(objext) stage3/slang
+slang.stage4: stage4-start
+	-mv slang/*$(objext) stage4/slang
+slang.stageprofile: stageprofile-start
+	-mv slang/*$(objext) stageprofile/slang
+slang.stagefeedback: stagefeedback-start
+	-mv slang/*$(objext) stagefeedback/slang
+
+config.status: slang/config-lang.in
