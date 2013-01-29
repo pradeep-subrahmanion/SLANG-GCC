@@ -1,5 +1,6 @@
 #include "frontend/visitor.h"
-
+#include <iostream>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -8,6 +9,8 @@ extern "C" {
 
 
 class GenericVisitor:public Visitor {
+
+private:
 
 public:
     

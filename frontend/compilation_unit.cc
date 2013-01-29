@@ -54,6 +54,10 @@ Procedure::~Procedure() {
   
 }
 
+vector<Statement *> Procedure::get_statements() {
+    return statements;
+}
+
 SymbolInfo * Procedure::generate_js(Runtime_Context *ctx) {
 
     string str  = "function " + name + "(";

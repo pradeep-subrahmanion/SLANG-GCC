@@ -49,6 +49,7 @@ public:
     ~Procedure();
     SymbolInfo *generate_js(Runtime_Context *ctx);
     void accept(Visitor &visitor);
+    vector<Statement *> get_statements();
 };
 
 class Tmodule: CompilationUnit {

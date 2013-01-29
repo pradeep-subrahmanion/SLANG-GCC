@@ -1,9 +1,10 @@
+#include <cstdio>
 #include "slang-gcc.h"
 #include "frontend/parser.h"
 #include "frontend/context.h"
 #include "frontend/compilation_unit.h"
 #include "genericizer.h"
-#include <cstdio>
+
 
 
 #ifdef __cplusplus

@@ -36,6 +36,11 @@ BooleanConstant::~BooleanConstant() {
     delete info;
 }
 
+SymbolInfo * BooleanConstant::get_symbol() {
+
+    return info;
+}
+
 void BooleanConstant::accept(Visitor &visitor) {
 
     visitor.visit(this);
@@ -79,6 +84,11 @@ SymbolInfo * NumericConstant::generate_js(Runtime_Context *ctx)
     ctx->update_stream(str);
 }
 
+
+SymbolInfo * NumericConstant::get_symbol() {
+
+    return info;
+}
 void NumericConstant::accept(Visitor &visitor) {
 
     visitor.visit(this);
@@ -113,6 +123,11 @@ string StringLiteral::evaluate_string(Execution_Context *ctx) {
 
 StringLiteral::~StringLiteral() {
   delete info;
+}
+
+SymbolInfo * StringLiteral::get_symbol() {
+
+    return info;
 }
 
 SymbolInfo * StringLiteral::generate_js(Runtime_Context *ctx)
@@ -217,6 +232,12 @@ SymbolInfo * Variable::generate_js(Runtime_Context *ctx)
     string str = info->symbol_name;
     ctx->update_stream(str);  
 }
+
+SymbolInfo * Variable::get_symbol() {
+
+    return info;
+}
+
 
 void Variable::accept(Visitor &visitor) {
 

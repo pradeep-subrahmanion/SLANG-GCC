@@ -1,8 +1,5 @@
+
 #include "genericizer.h"
-#include <iostream>
-
-
-
 #include "config.h"
 #include "system.h"
 #include "ansidecl.h"
@@ -27,14 +24,18 @@
 #include "tree-dump.h"
 #include <mpfr.h>
 
-#include <stdio.h>
-
 using namespace std;
+
 
 #ifdef __cplusplus
 extern "C" {
 
 #endif
+
+static tree current_procedure;
+static tree current_statements;
+static tree current_exp;
+static map<string,tree> symbol_table;
 
 /// Helper functions for GENERIC lowering
 
@@ -51,6 +52,9 @@ build_function_decl (const char *name, bool external, tree function_type) {
 
     return fndecl;
 }
+
+
+/// build function body.
 
 static void
 build_function_body (tree fndecl, tree stmts, tree block, tree ret) {
@@ -71,6 +75,8 @@ build_function_body (tree fndecl, tree stmts, tree block, tree ret) {
     cfun->function_end_locus = BUILTINS_LOCATION;
 
 }
+
+/// Returns tree from SLANG built-in type.
 
 tree tree_from_slang_type(TypeInfo info) {
 
@@ -94,20 +100,32 @@ tree tree_from_slang_type(TypeInfo info) {
     return ret;
 }
 
+/// Visitor Methods
+
 void GenericVisitor::visit (BooleanConstant * exp) {
     cout << "BooleanConstant " << "\n";
+    
+    SymbolInfo *info = exp->get_symbol();
+    current_exp = build_int_cst (boolean_type_node, info->bool_val);
 }
 
 void GenericVisitor::visit (NumericConstant * exp) {
     cout << "NumericConstant " << "\n";
+
+    SymbolInfo *info = exp->get_symbol();
+    current_exp = build_int_cst (integer_type_node, info->double_val);
 }
 
 void GenericVisitor::visit (StringLiteral * exp) {
     cout << "StringLiteral " << "\n";
+
+    SymbolInfo *info = exp->get_symbol();
+    current_exp = build_string_literal (info->string_val.length() + 1, info->string_val.c_str());
 }
 
 void GenericVisitor::visit (Variable * exp) {
     cout << "Variable " << "\n";
+    current_exp = tree_from_slang_type(TYPE_STRING);
 }
 
 void GenericVisitor::visit (BinaryPlus * exp) {
@@ -187,6 +205,7 @@ void GenericVisitor::visit (Procedure * exp) {
     vector<SymbolInfo *> formals = exp->formals;
     SymbolInfo *return_val = exp->return_val;
 
+    // Build formal arguments
     tree *args = (tree *) alloca (sizeof(tree) * formals.size());
     int i;
 
@@ -196,44 +215,52 @@ void GenericVisitor::visit (Procedure * exp) {
         args[i] = tree_from_slang_type(info->type);
     }
 
+    // tree from SLANG built-in type
     tree ret = tree_from_slang_type(return_val->type);
 
+    // Build function declaration
     tree  main_type   = build_function_type_array(ret, formals.size(), args);
     tree  main_fndecl = build_function_decl (str.c_str(), false, main_type);
+
+    // Make block , build statements 
 
     tree block = make_node(BLOCK);
     tree stmts = NULL_TREE ;
 
-  tree  char_p = build_pointer_type (char_type_node);
-  tree  puts_type   = build_function_type_list (integer_type_node,
-						char_p, NULL_TREE);
-  tree  puts_fndecl = build_function_decl ("puts", true, puts_type);
+    vector<Statement *> proc_stmts = exp->get_statements();
 
-  const char *msg = "HelloWorld , ... This is pradeeps compiler";
-  tree hello_str = build_string_literal (strlen(msg) + 1, msg);
+    for(i =0; i<proc_stmts.size(); ++i) {
 
-  tree  call = build_call_expr (puts_fndecl,1, hello_str);
-  append_to_statement_list (call, &stmts);
+        Statement *stmt = proc_stmts.at(i); 
+        stmt->accept(*this);
+    } 
 
-
+   // append_to_statement_list (call, &stmts);
 
     build_function_body (main_fndecl, stmts, block, ret);
+
+
+    // Gimplify and finalize function.
     gimplify_function_tree (main_fndecl);
 
-    FILE *fd = fopen("/home/pradeep/Desktop/dump1.txt","w");
-    dump_function_to_file (main_fndecl, fd, 0);
-    fclose(fd);
+    //FILE *fd = fopen("/home/pradeep/Desktop/dump1.txt","w");
+    //dump_function_to_file (main_fndecl, fd, 0);
+    //fclose(fd);
 
+    
 
-  cgraph_finalize_function (main_fndecl, false);
+    cgraph_finalize_function (main_fndecl, false);
 
-  current_function_decl = NULL_TREE;
-  pop_cfun();
+    //Back to global scope
+
+    current_function_decl = NULL_TREE;
+    pop_cfun();
     
 }
 void GenericVisitor::visit (Tmodule * exp) {
 
-    cout << "Tmodule1313313 " << "\n";
+    // Genericize the all procedures . 
+
     vector<Procedure *> procs = exp->get_procs();
 
     int i;

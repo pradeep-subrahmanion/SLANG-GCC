@@ -40,6 +40,7 @@ public:
     }
     ;
     SymbolInfo * generate_js(Runtime_Context *ctx);
+    SymbolInfo * get_symbol();
     void accept(Visitor &visitor);
 };
 
@@ -57,6 +58,7 @@ public:
     ;
     ~NumericConstant();
     SymbolInfo * generate_js(Runtime_Context *ctx);
+    SymbolInfo * get_symbol();
     void accept(Visitor &visitor);
 
 };
@@ -73,6 +75,7 @@ public:
     string evaluate_string(Execution_Context *ctx);
     ~StringLiteral();
     SymbolInfo * generate_js(Runtime_Context *ctx);
+    SymbolInfo * get_symbol();
     void accept(Visitor &visitor);
 };
 
@@ -94,6 +97,7 @@ public:
     string evaluate_string(Execution_Context *ctx);
     ~Variable();
     SymbolInfo * generate_js(Runtime_Context *ctx);
+    SymbolInfo * get_symbol();
     void accept(Visitor &visitor);
 };
 
